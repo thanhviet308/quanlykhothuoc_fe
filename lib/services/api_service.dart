@@ -166,6 +166,30 @@ class ApiService {
     }
   }
 
+  // ====== DATA APIs (NEW) ======
+
+  /// Lấy dữ liệu Dashboard. Backend: GET /api/dashboard
+  static Future<(bool ok, Map<String, dynamic>? data, String message)>
+  getDashboardData() async {
+    try {
+      final t = await token;
+      if (t == null || t.isEmpty) return (false, null, 'Chưa đăng nhập.');
+
+      final resp = await http
+          .get(_uri('/api/dashboard'), headers: {'Authorization': 'Bearer $t'})
+          .timeout(const Duration(seconds: 12));
+
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        // Data trả về là JSON object, cần wrap vào Map<String, dynamic>
+        return (true, data, 'OK');
+      }
+      return (false, null, _errorFrom(resp));
+    } catch (_) {
+      return (false, null, 'Không thể kết nối máy chủ.');
+    }
+  }
+
   // ===== Helpers =====
   static String _errorFrom(http.Response r) {
     try {
