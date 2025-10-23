@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:frontend/screens/drug_list_screen.dart';
 
 class HomePage extends StatefulWidget {
   final String apiBase; // không dùng khi fake, giữ để sau này cắm API
@@ -124,6 +125,13 @@ class _HomePageState extends State<HomePage> {
                         label: "Thuốc đang hoạt động",
                         value: "${data.totalDrugs}",
                         icon: Icons.medication,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const DrugListScreen(),
+                            ),
+                          );
+                        },
                       ),
                       KpiItem(
                         label: "Sắp hết hạn",
@@ -282,7 +290,13 @@ class KpiItem {
   final String label;
   final String value;
   final IconData icon;
-  KpiItem({required this.label, required this.value, required this.icon});
+  final VoidCallback? onTap;
+  KpiItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.onTap,
+  });
 }
 
 class _KpiCard extends StatelessWidget {
@@ -291,7 +305,7 @@ class _KpiCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    final card = Card(
       elevation: 0.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: Padding(
@@ -322,6 +336,13 @@ class _KpiCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+
+    if (item.onTap == null) return card;
+    return InkWell(
+      onTap: item.onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: card,
     );
   }
 }

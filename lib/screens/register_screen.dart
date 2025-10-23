@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -31,7 +32,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Hiển thị cảnh báo rõ ràng khi form chưa hợp lệ
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng điền thông tin hợp lệ.')),
+      );
+      return;
+    }
     FocusScope.of(context).unfocus();
 
     try {
@@ -44,7 +51,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-      if (ok) Navigator.of(context).pop(); // quay lại màn đăng nhập
+      if (ok) {
+        // Quay về màn đăng nhập; nếu không có route trước đó, thử replace sang '/login'
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else {
+          Navigator.of(context).pushReplacementNamed('/login');
+        }
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -53,7 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final api = ApiService.baseUrl;
+    // final api = ApiService.baseUrl; // hiển thị khi cần debug endpoint
 
     return Scaffold(
       // Nền xanh dược đồng bộ với Login
@@ -160,7 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 obscureText: !_showPass,
                                 textInputAction: TextInputAction.next,
                                 decoration: InputDecoration(
-                                  labelText: 'Mật khẩu',
+                                  labelText: 'Mật khẩu (6 chữ số)',
                                   prefixIcon: const Icon(Icons.lock_outline),
                                   border: const OutlineInputBorder(),
                                   suffixIcon: IconButton(
@@ -176,12 +190,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                   ),
                                 ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(6),
+                                ],
                                 validator: (v) {
-                                  if (v == null || v.isEmpty) {
-                                    return 'Nhập mật khẩu';
-                                  }
-                                  if (v.length < 8) {
-                                    return 'Tối thiểu 8 ký tự (khuyến nghị GSP)';
+                                  final s = v ?? '';
+                                  if (!RegExp(r'^\d{6}$').hasMatch(s)) {
+                                    return 'Mật khẩu phải gồm đúng 6 chữ số';
                                   }
                                   return null;
                                 },
@@ -209,9 +226,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ),
                                   ),
                                 ),
-                                validator: (v) => (v != _passwordCtrl.text)
-                                    ? 'Không khớp'
-                                    : null,
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.digitsOnly,
+                                  LengthLimitingTextInputFormatter(6),
+                                ],
+                                validator: (v) {
+                                  final s = v ?? '';
+                                  if (!RegExp(r'^\d{6}$').hasMatch(s)) {
+                                    return 'Nhập lại mật khẩu 6 chữ số';
+                                  }
+                                  if (s != _passwordCtrl.text)
+                                    return 'Không khớp';
+                                  return null;
+                                },
                               ),
 
                               const SizedBox(height: 12),
@@ -265,8 +293,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-
-                              // GSP tips + API chip
+                              // Đã có tài khoản? → Đăng nhập
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text('Đã có tài khoản?'),
+                                  TextButton(
+                                    onPressed: _busy
+                                        ? null
+                                        : () {
+                                            if (Navigator.of(
+                                              context,
+                                            ).canPop()) {
+                                              Navigator.of(context).pop();
+                                            } else {
+                                              Navigator.of(
+                                                context,
+                                              ).pushReplacementNamed('/login');
+                                            }
+                                          },
+                                    child: const Text('Đăng nhập ngay'),
+                                  ),
+                                ],
+                              ),
                               const SizedBox(height: 8),
                             ],
                           ),

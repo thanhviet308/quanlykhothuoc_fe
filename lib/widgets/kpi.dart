@@ -7,12 +7,14 @@ class KpiItem {
   final String value;
   final IconData icon;
   final Color? accent;
+  final VoidCallback? onTap;
 
   KpiItem({
     required this.label,
     required this.value,
     required this.icon,
     this.accent,
+    this.onTap,
   });
 }
 
@@ -60,8 +62,8 @@ class _KpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final accent = item.accent ?? cs.primary;
-
-    return Container(
+    final borderRadius = BorderRadius.circular(16);
+    final child = Container(
       constraints: const BoxConstraints(
         minHeight: 68,
       ), // đảm bảo đủ cao, ko ép thấp
@@ -71,7 +73,7 @@ class _KpiCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: borderRadius,
         border: Border.all(color: cs.outlineVariant.withOpacity(.5)),
         boxShadow: [
           BoxShadow(
@@ -133,6 +135,16 @@ class _KpiCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+
+    if (item.onTap == null) return child;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: item.onTap,
+        borderRadius: borderRadius,
+        child: child,
       ),
     );
   }

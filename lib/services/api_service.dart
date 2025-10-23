@@ -199,4 +199,76 @@ class ApiService {
       return 'Lỗi ${r.statusCode}';
     }
   }
+
+  static Future<(bool ok, List<dynamic>? data, String message)> getData(
+    String path,
+  ) async {
+    try {
+      final t = await token;
+      if (t == null || t.isEmpty) return (false, null, 'Chưa đăng nhập.');
+
+      final resp = await http
+          .get(_uri(path), headers: {'Authorization': 'Bearer $t'})
+          .timeout(const Duration(seconds: 12));
+
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body) as List<dynamic>;
+        return (true, data, 'OK');
+      }
+      return (false, null, _errorFrom(resp));
+    } catch (_) {
+      return (false, null, 'Không thể kết nối máy chủ.');
+    }
+  }
+
+  // Helper cho GET trả về JSON object (Map), ví dụ các API phân trang: { data, total, ... }
+  static Future<(bool ok, Map<String, dynamic>? data, String message)> getJson(
+    String path,
+  ) async {
+    try {
+      final t = await token;
+      if (t == null || t.isEmpty) return (false, null, 'Chưa đăng nhập.');
+
+      final resp = await http
+          .get(_uri(path), headers: {'Authorization': 'Bearer $t'})
+          .timeout(const Duration(seconds: 12));
+
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        return (true, data, 'OK');
+      }
+      return (false, null, _errorFrom(resp));
+    } catch (_) {
+      return (false, null, 'Không thể kết nối máy chủ.');
+    }
+  }
+
+  // Helper cho POST requests
+  static Future<(bool ok, String message)> postData(
+    String path,
+    Map<String, dynamic> payload,
+  ) async {
+    try {
+      final t = await token;
+      if (t == null || t.isEmpty) return (false, 'Chưa đăng nhập.');
+
+      final resp = await http
+          .post(
+            _uri(path),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $t',
+            },
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (resp.statusCode == 201) {
+        return (true, 'Tạo phiếu thành công!');
+      }
+      return (false, _errorFrom(resp));
+    } catch (e) {
+      return (false, 'Không thể kết nối máy chủ. Lỗi: $e');
+    }
+  }
 }
