@@ -32,14 +32,6 @@ class QuickActions extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: _ActionButton(
-            icon: Icons.warning_amber,
-            label: "Cảnh báo",
-            onTap: onCanhBao,
-            tint: cs.error,
-          ),
-        ),
       ],
     );
   }

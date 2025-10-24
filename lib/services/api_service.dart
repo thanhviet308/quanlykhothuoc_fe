@@ -119,7 +119,10 @@ class ApiService {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $t',
             },
-            body: jsonEncode({'old': oldPassword, 'new': newPassword}),
+            body: jsonEncode({
+              'oldPassword': oldPassword,
+              'newPassword': newPassword,
+            }),
           )
           .timeout(const Duration(seconds: 15));
 

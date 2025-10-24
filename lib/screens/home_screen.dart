@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:frontend/screens/drug_list_screen.dart';
+import 'package:frontend/screens/warning_list_screen.dart';
+import 'package:frontend/screens/expired_list_screen.dart';
 
 class HomePage extends StatefulWidget {
   final String apiBase; // không dùng khi fake, giữ để sau này cắm API
@@ -18,6 +20,60 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _future = _fetchDashboard(); // chỉ lấy mock
+  }
+
+  DateTime? _parseDate(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    if (v is int) {
+      try {
+        var millis = v;
+        if (millis < 1000000000000) millis *= 1000;
+        return DateTime.fromMillisecondsSinceEpoch(millis).toLocal();
+      } catch (_) {
+        return null;
+      }
+    }
+    final s = v.toString().trim();
+    final iso = DateTime.tryParse(s.length >= 10 ? s.substring(0, 10) : s);
+    if (iso != null) return iso.toLocal();
+    if (s.contains('/')) {
+      final parts = s.split('/');
+      if (parts.length == 3) {
+        final d = int.tryParse(parts[0]);
+        final m = int.tryParse(parts[1]);
+        final y = int.tryParse(parts[2]);
+        if (d != null && m != null && y != null) {
+          try {
+            return DateTime(y, m, d);
+          } catch (_) {}
+        }
+      }
+    }
+    return null;
+  }
+
+  List<Map<String, dynamic>> _expiredFromWarnings(
+    List<Map<String, dynamic>> ws,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    return ws.where((w) {
+      final d = _parseDate(w['han_dung']);
+      return d != null && d.isBefore(today);
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _nearExpiryFromWarnings(
+    List<Map<String, dynamic>> ws,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final end = today.add(const Duration(days: 60));
+    return ws.where((w) {
+      final d = _parseDate(w['han_dung']);
+      return d != null && !d.isBefore(today) && !d.isAfter(end);
+    }).toList();
   }
 
   // 🔹 FAKE DATA ở đây
@@ -137,11 +193,33 @@ class _HomePageState extends State<HomePage> {
                         label: "Sắp hết hạn",
                         value: "${data.nearExpiry}",
                         icon: Icons.warning_amber_rounded,
+                        onTap: () {
+                          final items = _nearExpiryFromWarnings(data.warnings);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => WarningListScreen(
+                                warnings: items,
+                                title: 'Thuốc sắp hết hạn',
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       KpiItem(
                         label: "Hết hạn",
                         value: "${data.expired}",
                         icon: Icons.event_busy,
+                        onTap: () {
+                          final items = _expiredFromWarnings(data.warnings);
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ExpiredListScreen(
+                                items: items,
+                                title: 'Thuốc hết hạn',
+                              ),
+                            ),
+                          );
+                        },
                       ),
                       KpiItem(
                         label: "Tồn tổng",

@@ -32,7 +32,7 @@ class _ExpiredListScreenState extends State<ExpiredListScreen> {
   }
 
   String _formatDate(dynamic v) {
-    if (v == null) return 'N/A';
+    if (v == null) return '-';
     DateTime? dt;
     if (v is DateTime) {
       dt = v;
@@ -180,10 +180,10 @@ class _ExpiredListScreenState extends State<ExpiredListScreen> {
     // Thuốc ID cần được lấy từ data, hãy đảm bảo dashboard API trả về nó.
     // Ví dụ: w['thuoc_id'] phải là ID của Thuoc, không phải LoThuoc
     final thuocId = w['thuoc_id'];
-    final maThuoc = w['ma_thuoc'] ?? 'N/A';
-    final tenThuoc = w['ten_thuoc'] ?? w['thuoc'] ?? 'N/A';
+    final maThuoc = w['ma_thuoc'] ?? '-';
+    final tenThuoc = w['ten_thuoc'] ?? w['thuoc'] ?? '-';
     final hanDung = _formatDate(w['han_dung']);
-    final soLo = w['so_lo'] ?? 'N/A';
+    final soLo = w['so_lo'] ?? '-';
     final lyDo = w['ly_do'] ?? 'Cảnh báo';
     final soLuongTon = w.containsKey('so_luong_ton')
         ? w['so_luong_ton']

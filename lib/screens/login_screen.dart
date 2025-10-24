@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       setState(() => _busy = true);
 
-      final (ok, msgOrToken) = await ApiService.login(
+      final (ok, msg) = await ApiService.login(
         username: _usernameCtrl.text.trim(),
         password: _passwordCtrl.text,
       );
@@ -40,18 +40,12 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       if (ok) {
-        final token = msgOrToken; // JWT từ backend
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => HomePage(
-              apiBase:
-                  '${ApiService.baseUrl}/api', // ví dụ: http://10.0.2.2:3000/api
-              token: token,
-            ),
-          ),
-        );
+        // Token đã được lưu trong Secure Storage bởi ApiService.login
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
       } else {
-        _showSnack(msgOrToken);
+        _showSnack(msg);
       }
     } finally {
       if (mounted) setState(() => _busy = false);

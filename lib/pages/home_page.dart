@@ -20,9 +20,7 @@ import '../widgets/recent_phieu_panel.dart';
 // import 'package:frontend/services/inventory_service.dart';
 
 class HomePage extends StatefulWidget {
-  final String apiBase; // để sau này gắn API
-  final String token;
-  const HomePage({super.key, required this.apiBase, required this.token});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -67,6 +65,7 @@ class _HomePageState extends State<HomePage> {
     return null;
   }
 
+  // Hàm lọc chỉ lấy thuốc ĐÃ HẾT HẠN
   List<Map<String, dynamic>> _expiredFromWarnings(
     List<Map<String, dynamic>> ws,
   ) {
@@ -74,6 +73,21 @@ class _HomePageState extends State<HomePage> {
     return ws.where((w) {
       final d = _parseDate(w['han_dung']);
       return d != null && d.isBefore(DateTime(now.year, now.month, now.day));
+    }).toList();
+  }
+
+  // Hàm lọc chỉ lấy thuốc SẮP HẾT HẠN (chưa hết hạn)
+  List<Map<String, dynamic>> _nearExpiryFromWarnings(
+    List<Map<String, dynamic>> ws,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Define a reasonable "near expiry" window (60 days)
+    final end = today.add(const Duration(days: 60));
+    return ws.where((w) {
+      final d = _parseDate(w['han_dung']);
+      // Keep items with a valid date that are between today and end (inclusive)
+      return d != null && !d.isBefore(today) && !d.isAfter(end);
     }).toList();
   }
 
@@ -127,7 +141,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Kho Dược — Dashboard"),
+        title: const Text("Kho Dược — Bảng điều khiển"),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -153,10 +167,13 @@ class _HomePageState extends State<HomePage> {
       body: FutureBuilder<DashboardData>(
         future: _future,
         builder: (context, snap) {
+          // <--- Tham số là 'snap'
           if (snap.connectionState == ConnectionState.waiting) {
+            // <--- Dùng 'snap'
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
+            // <--- Dùng 'snap'
             return Center(child: Text("Lỗi: ${snap.error}"));
           }
           final data = snap.data!;
@@ -193,10 +210,12 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.warning_amber_rounded,
                         accent: AppTheme.warning,
                         onTap: () {
+                          // Đã sửa: Chỉ truyền danh sách thuốc SẮP HẾT HẠN
+                          final items = _nearExpiryFromWarnings(data.warnings);
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => WarningListScreen(
-                                warnings: data.warnings,
+                                warnings: items,
                                 title: 'Thuốc sắp hết hạn',
                               ),
                             ),
@@ -209,7 +228,19 @@ class _HomePageState extends State<HomePage> {
                         icon: Icons.event_busy,
                         accent: AppTheme.danger,
                         onTap: () {
-                          final items = _expiredFromWarnings(data.warnings);
+                          // Prefer the backend-provided full expired list if available;
+                          // otherwise fall back to deriving expired items from warnings.
+                          // Defensive: additionally ensure items are truly expired (date < today)
+                          final now = DateTime.now();
+                          final today = DateTime(now.year, now.month, now.day);
+                          final backendExpired = data.expiredItems.where((w) {
+                            final d = _parseDate(w['han_dung']);
+                            return d != null && d.isBefore(today);
+                          }).toList();
+
+                          final items = (backendExpired.isNotEmpty)
+                              ? backendExpired
+                              : _expiredFromWarnings(data.warnings);
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => ExpiredListScreen(
@@ -244,7 +275,7 @@ class _HomePageState extends State<HomePage> {
 
                   const SizedBox(height: 18),
                   CardSection(
-                    title: "⚠️ Cảnh báo sắp hết hạn (60 ngày)",
+                    title: "⚠️ Cảnh báo ",
                     trailing: BadgePill(text: "${data.warnings.length} mục"),
                     child: WarningsPanel(warnings: data.warnings),
                   ),

@@ -16,6 +16,10 @@ class _XuatKhoScreenState extends State<XuatKhoScreen> {
   List<dynamic> _drugs = [];
   int? _selectedDrugId;
   bool _loadingDrugs = true;
+  // Lô theo thuốc đã chọn
+  List<dynamic> _selectedLots = [];
+  bool _loadingLots = false;
+  bool _hasValidLots = true;
 
   final _phieuNoCtrl = TextEditingController(
     text: 'PX${DateTime.now().millisecondsSinceEpoch % 1000}',
@@ -45,6 +49,74 @@ class _XuatKhoScreenState extends State<XuatKhoScreen> {
         setState(() => _loadingDrugs = false);
       }
     }
+  }
+
+  // Khi chọn thuốc, tải lô tương ứng và kiểm tra HSD
+  Future<void> _onDrugSelected(int? id) async {
+    setState(() {
+      _selectedDrugId = id;
+      _selectedLots = [];
+      _loadingLots = true;
+      _hasValidLots = true;
+    });
+
+    if (id == null) {
+      setState(() {
+        _loadingLots = false;
+      });
+      return;
+    }
+
+    final (ok, data, msg) = await InventoryService.getLots(drugId: id);
+    if (!(ok && data != null)) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi tải lô thuốc: $msg')));
+      }
+      setState(() {
+        _loadingLots = false;
+        _selectedLots = [];
+        _hasValidLots = false;
+      });
+      return;
+    }
+
+    // Kiểm tra xem có lô nào chưa hết hạn hay không
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    bool hasValid = false;
+    for (final l in data) {
+      final han = l['han_dung'];
+      DateTime? dt;
+      if (han is String) {
+        // Try ISO first
+        dt = DateTime.tryParse(han);
+        if (dt == null && han.contains('/')) {
+          final parts = han.split('/');
+          if (parts.length == 3) {
+            final d = int.tryParse(parts[0]);
+            final m = int.tryParse(parts[1]);
+            final y = int.tryParse(parts[2]);
+            if (d != null && m != null && y != null) dt = DateTime(y, m, d);
+          }
+        }
+      } else if (han is int) {
+        var millis = han;
+        if (millis < 1000000000000) millis *= 1000;
+        dt = DateTime.fromMillisecondsSinceEpoch(millis);
+      }
+      if (dt != null && !dt.isBefore(today)) {
+        hasValid = true;
+        break;
+      }
+    }
+
+    setState(() {
+      _selectedLots = data;
+      _loadingLots = false;
+      _hasValidLots = hasValid;
+    });
   }
 
   @override
@@ -157,15 +229,35 @@ class _XuatKhoScreenState extends State<XuatKhoScreen> {
                         );
                       }).toList(),
                       onChanged: (int? newValue) {
-                        setState(() {
-                          _selectedDrugId = newValue;
-                        });
+                        _onDrugSelected(newValue);
                       },
                       validator: (value) =>
                           value == null ? 'Vui lòng chọn thuốc' : null,
                     ),
 
               const SizedBox(height: 12),
+              // Hiển thị trạng thái lô theo thuốc đã chọn
+              if (_loadingLots)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_selectedDrugId != null && !_hasValidLots)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    'Không có lô còn hạn cho thuốc này — không thể xuất.',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                )
+              else if (_selectedDrugId != null && _selectedLots.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    'Lô khả dụng: ${_selectedLots.length} — xuất sẽ dùng lô có hạn dùng còn hiệu lực.',
+                    style: const TextStyle(color: Colors.green),
+                  ),
+                ),
               Row(
                 children: [
                   Expanded(
@@ -199,9 +291,9 @@ class _XuatKhoScreenState extends State<XuatKhoScreen> {
               const SizedBox(height: 24),
               // NÚT LƯU
               FilledButton.icon(
-                onPressed: _busy || _loadingDrugs
+                onPressed: _busy || _loadingDrugs || !_hasValidLots
                     ? null
-                    : _submit, // Disable nếu đang bận hoặc đang tải
+                    : _submit, // Disable nếu đang bận, đang tải hoặc không có lô hợp lệ
                 icon: _busy
                     ? const SizedBox(
                         width: 18,

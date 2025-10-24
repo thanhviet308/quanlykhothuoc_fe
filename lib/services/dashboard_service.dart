@@ -23,6 +23,7 @@ class DashboardService {
       // Chuyển List<dynamic> từ JSON thành List<Map<String, dynamic>>
       warnings: List<Map<String, dynamic>>.from(data["warnings"] ?? []),
       recentPhieu: List<Map<String, dynamic>>.from(data["recentPhieu"] ?? []),
+      expiredItems: List<Map<String, dynamic>>.from(data["expiredItems"] ?? []),
     );
   }
 }

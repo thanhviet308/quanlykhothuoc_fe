@@ -124,10 +124,10 @@ class _DrugListScreenState extends State<DrugListScreen> {
                           Icons.medical_services_outlined,
                           color: Colors.blueGrey,
                         ),
-                        title: Text(drug['ten_thuoc'] ?? 'N/A'),
+                        title: Text(drug['ten_thuoc'] ?? '-'),
                         // vẫn hiển thị thông tin phụ
                         subtitle: Text(
-                          'Mã: ${drug['ma_thuoc'] ?? 'N/A'} | Ngưỡng cảnh báo: ${drug['nguong_canh_bao'] ?? 0}',
+                          'Mã: ${drug['ma_thuoc'] ?? '-'} | Ngưỡng cảnh báo: ${drug['nguong_canh_bao'] ?? 0}',
                         ),
                         trailing: BadgePill(
                           text: hoatDong ? "Hoạt động" : "Ngừng HĐ",

@@ -5,6 +5,7 @@ class DashboardData {
   final int totalOnHand;
   final List<Map<String, dynamic>> warnings;
   final List<Map<String, dynamic>> recentPhieu;
+  final List<Map<String, dynamic>> expiredItems;
 
   DashboardData({
     required this.totalDrugs,
@@ -13,5 +14,6 @@ class DashboardData {
     required this.totalOnHand,
     required this.warnings,
     required this.recentPhieu,
+    required this.expiredItems,
   });
 }

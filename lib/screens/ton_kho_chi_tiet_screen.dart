@@ -16,7 +16,7 @@ class _TonKhoChiTietScreenState extends State<TonKhoChiTietScreen> {
   String _currentQuery = '';
 
   String _formatDate(dynamic v) {
-    if (v == null) return 'N/A';
+    if (v == null) return '-';
     DateTime? dt;
     if (v is DateTime) {
       dt = v;
@@ -158,8 +158,8 @@ class _TonKhoChiTietScreenState extends State<TonKhoChiTietScreen> {
               itemBuilder: (context, index) {
                 final lot = lots[index];
 
-                final tenThuoc = (lot['ten_thuoc'] ?? 'N/A').toString();
-                final soLo = (lot['so_lo'] ?? 'N/A').toString();
+                final tenThuoc = (lot['ten_thuoc'] ?? '-').toString();
+                final soLo = (lot['so_lo'] ?? '-').toString();
                 final hanDung = _formatDate(lot['han_dung']);
                 final soLuong = (lot['so_luong'] ?? '0').toString();
 
