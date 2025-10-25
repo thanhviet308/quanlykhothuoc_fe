@@ -40,6 +40,16 @@ class _NhapKhoScreenState extends State<NhapKhoScreen> {
     _loadDrugs();
   }
 
+  // Hỗ trợ nhập số theo thói quen VN: cho phép "." làm phân tách hàng nghìn và "," làm dấu thập phân
+  double? _parseVnNumber(String? v) {
+    if (v == null) return null;
+    final s = v
+        .replaceAll(RegExp(r'\s'), '') // bỏ khoảng trắng
+        .replaceAll('.', '') // bỏ dấu chấm ngăn cách nghìn
+        .replaceAll(',', '.'); // chuyển dấu phẩy thành dấu chấm thập phân
+    return double.tryParse(s);
+  }
+
   // 💡 HÀM MỚI: MỞ DATE PICKER
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
@@ -112,7 +122,7 @@ class _NhapKhoScreenState extends State<NhapKhoScreen> {
           {
             "thuoc_id": _selectedDrugId,
             "so_luong": int.tryParse(_soLuongCtrl.text),
-            "don_gia": double.tryParse(_donGiaCtrl.text),
+            "don_gia": _parseVnNumber(_donGiaCtrl.text),
             "so_lo": _soLoCtrl.text.trim(),
             "han_dung": _hanDungCtrl.text.trim(), // Định dạng BE cần
             "lo_id": null,
@@ -245,8 +255,10 @@ class _NhapKhoScreenState extends State<NhapKhoScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Đơn giá nhập',
                       ),
-                      keyboardType: TextInputType.number,
-                      validator: (v) => double.tryParse(v ?? '') == null
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (v) => _parseVnNumber(v) == null
                           ? 'Đơn giá phải là số'
                           : null,
                     ),
